@@ -32,6 +32,8 @@ class MjViewerBasic(cymj.MjRenderContextWindow):
         self._button_right_pressed = False
         self._last_mouse_x = 0
         self._last_mouse_y = 0
+        self._selectedBodyId = -1
+        self._skinId = -1
 
         framebuffer_width, _ = glfw.get_framebuffer_size(self.window)
         window_width, _ = glfw.get_window_size(self.window)
@@ -87,7 +89,11 @@ class MjViewerBasic(cymj.MjRenderContextWindow):
         width, height = glfw.get_framebuffer_size(window)
 
         with self._gui_lock:
-            self.move_camera(action, dx / height, dy / height)
+            if self._selectedBodyId == -1:
+                # no perturbations when user initiates drag upon "empty space"
+                self.move_camera(action, dx / height, dy / height)
+            else:
+                self.perturb_body(self._selectedBodyId, self._skinId, dx/height, dy/height)
 
         self._last_mouse_x = int(self._scale * xpos)
         self._last_mouse_y = int(self._scale * ypos)
@@ -97,10 +103,19 @@ class MjViewerBasic(cymj.MjRenderContextWindow):
             glfw.get_mouse_button(window, glfw.MOUSE_BUTTON_LEFT) == glfw.PRESS)
         self._button_right_pressed = (
             glfw.get_mouse_button(window, glfw.MOUSE_BUTTON_RIGHT) == glfw.PRESS)
-
+        self._button_left_released = (
+            glfw.get_mouse_button(window, glfw.MOUSE_BUTTON_LEFT) == glfw.RELEASE)
         x, y = glfw.get_cursor_pos(window)
         self._last_mouse_x = int(self._scale * x)
         self._last_mouse_y = int(self._scale * y)
+        if self._button_left_pressed:
+            # find which object has been clicked on.
+            width, height = glfw.get_window_size(window)
+            aspectRatio = float(width)/float(height)
+            self._selectedBodyId, self._skinId = self.find_selected_body(aspectRatio, float(x)/float(width), 1.-float(y)/float(height))
+            print("Clicked on body ID {}. skin ID: {}".format(self._selectedBodyId, self._skinId))
+        elif self._button_left_released:
+            self.stop_perturb_body()
 
     def _scroll_callback(self, window, x_offset, y_offset):
         with self._gui_lock:

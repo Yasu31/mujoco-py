@@ -1,5 +1,5 @@
 SPHINXOPTS    =
-SPHINXBUILD   = python -msphinx
+SPHINXBUILD   = python3 -msphinx
 SPHINXPROJ    = mujoco-py
 SOURCEDIR     = .
 BUILDDIR      = build

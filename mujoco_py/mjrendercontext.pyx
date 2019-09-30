@@ -59,7 +59,7 @@ cdef class MjRenderContext(object):
         self.con = WrapMjrContext(&self._con)
 
         self._pert.active = 0
-        self._pert.select = 0
+        self._pert.select = -1
         self._pert.skinselect = -1
 
         self.pert = WrapMjvPerturb(&self._pert)
@@ -212,6 +212,31 @@ cdef class MjRenderContext(object):
     def move_camera(self, int action, double reldx, double reldy):
         """ Moves the camera based on mouse movements. Action is one of mjMOUSE_*. """
         mjv_moveCamera(self._model_ptr, action, reldx, reldy, &self._scn, &self._cam)
+
+    def find_selected_body(self, double aspectRatio, mjtNum x, mjtNum y):
+        """ Find the body ID and skin ID (?) at position of click."""
+        cdef int geomId
+        cdef int skinId
+        selPnt = np.zeros(3, dtype=np.double)
+        cdef mjtNum[3] selPnt_ = selPnt
+        selectedBodyId = mjv_select(self._model_ptr, self._data_ptr, &self._vopt, aspectRatio, x, y, &self._scn, &selPnt_[0], &geomId, &skinId)
+        return selectedBodyId, skinId
+
+    def perturb_body(self, int selectedBodyId, int skinId, double reldx, double reldy):
+        """ perturb a particular object."""
+        previousId = self._pert.select
+        self._pert.active = mjPERT_TRANSLATE
+        self._pert.select = selectedBodyId
+        self._pert.skinselect = skinId
+        self.sim.pert = self._pert
+        if previousId == -1 and self._pert.select >= 0:
+            # perturbation onset: reset reference
+            mjv_initPerturb(self._model_ptr, self._data_ptr, &self._scn, &self._pert)
+        mjv_movePerturb(self._model_ptr, self._data_ptr, mjtMouse.mjMOUSE_MOVE_H, reldx, reldy, &self._scn, &self._pert)
+
+    def stop_perturb_body(self):
+        """ Stop perturbation of objects."""
+        self.perturb_body(-1, -1, 0, 0)
 
     def add_overlay(self, int gridpos, str text1, str text2):
         """ Overlays text on the scene. """

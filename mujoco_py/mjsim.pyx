@@ -64,6 +64,8 @@ cdef class MjSim(object):
     cdef readonly uintptr_t substep_callback_ptr
     # Callback executed before rendering.
     cdef public object render_callback
+    # 
+    cdef public mjvPerturb pert
 
     def __cinit__(self, PyMjModel model, PyMjData data=None, int nsubsteps=1,
                   udd_callback=None, substep_callback=None, userdata_names=None,
@@ -126,6 +128,10 @@ cdef class MjSim(object):
         with wrap_mujoco_warning():
             for _ in range(self.nsubsteps):
                 self.substep_callback()
+                # clear old perturbations, apply new
+                mju_zero(self.data.ptr.xfrc_applied, 6*self.model.ptr.nbody)
+                mjv_applyPerturbForce(self.model.ptr, self.data.ptr, &self.pert)
+
                 mj_step(self.model.ptr, self.data.ptr)
 
     def render(self, width=None, height=None, *, camera_name=None, depth=False,
