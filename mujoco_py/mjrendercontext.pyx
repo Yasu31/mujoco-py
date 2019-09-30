@@ -232,7 +232,7 @@ cdef class MjRenderContext(object):
         if previousId == -1 and self._pert.select >= 0:
             # perturbation onset: reset reference
             mjv_initPerturb(self._model_ptr, self._data_ptr, &self._scn, &self._pert)
-        mjv_movePerturb(self._model_ptr, self._data_ptr, mjtMouse.mjMOUSE_MOVE_H, reldx, reldy, &self._scn, &self._pert)
+        mjv_movePerturb(self._model_ptr, self._data_ptr, mjtMouse.mjMOUSE_MOVE_V, reldx, reldy, &self._scn, &self._pert)
 
     def stop_perturb_body(self):
         """ Stop perturbation of objects."""
